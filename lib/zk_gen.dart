@@ -5,8 +5,11 @@ import 'package:polygonid_flutter_sdk/circuits/data/circuit_model.dart';
 import 'package:polygonid_flutter_sdk/circuits/data/circuits_to_download_param.dart';
 import 'package:polygonid_flutter_sdk/common/domain/entities/chain_config_entity.dart';
 import 'package:polygonid_flutter_sdk/common/domain/entities/env_entity.dart';
+import 'package:polygonid_flutter_sdk/common/domain/entities/filter_entity.dart';
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/credential/request/offer_iden3_message_entity.dart';
+import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/request/contract_iden3_message_entity.dart';
+import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/response/iden3comm_proof_entity.dart';
 import 'package:polygonid_flutter_sdk/proof/domain/entities/download_info_entity.dart';
 import 'package:polygonid_flutter_sdk/sdk/polygon_id_sdk.dart';
 
@@ -121,6 +124,35 @@ class ZkGenerator {
     });
   }
 
+  Future<String> getProof(String message, String did, String pk, String byField, String byValue) async {
+    return _lock.synchronized(() async {
+      var credentials = await PolygonIdSdk.I.credential.getClaims(
+        genesisDid: did,
+        privateKey: pk,
+        filters: [
+          FilterEntity(operator: FilterOperator.equal, name: byField, value: byValue)
+        ]
+      );
+
+      if (credentials.isEmpty) {
+        throw Exception("No credentials found for the identity");
+      }
+
+      var credential = credentials.first;
+
+      var iden3message = await PolygonIdSdk.I.iden3comm.getIden3Message(message: message) as ContractInvokeRequestMessage;
+      var proof = await PolygonIdSdk.I.iden3comm.getProof(
+        request: iden3message.body.scope[0],
+        genesisDid: did,
+        privateKey: pk,
+        verifierDid: '',
+        transactionData: iden3message.body.transactionData.toJson(),
+        credential: credential,
+      );
+      return jsonEncode(proof.toJson());
+    });
+  }
+
   Future<List<CredentialEntity>> claimCredential(String message, String did, String pk) async {
     return _lock.synchronized(() async {
       var iden3message = await PolygonIdSdk.I.iden3comm.getIden3Message(message: message);
@@ -153,11 +185,15 @@ class ZkGenerator {
     });
   }
 
-  Future<List<CredentialEntity>> getCredentials(String did, String pk) async {
+  Future<List<CredentialEntity>> getCredentials(String did, String pk, String? byField, String? byValue) async {
     return _lock.synchronized(() async {
       return await PolygonIdSdk.I.credential.getClaims(
         genesisDid: did,
         privateKey: pk,
+        filters: [
+          if (byField != null && byValue != null)
+            FilterEntity(operator: FilterOperator.equal, name: byField, value: byValue)
+        ]
       );
     });
   }

@@ -71,8 +71,25 @@ Future<dynamic> _handleCall(MethodCall call) async {
       try {
         await _zkGenerator.authenticate(message, userDid, userPk);
         return encodeResponse({'success': true});
-      } catch (e) {
-        return encodeResponse({'success': false, 'error': e.toString()});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
+    case 'getProof':
+      final args = call.arguments;
+      final String message = args['message'] ?? '';
+      final String userDid = args['userDid'] ?? '';
+      final String userPk = args['userPk'] ?? '';
+      final String byField = args['byField'] ?? '';
+      final String byValue = args['byValue'] ?? '';
+      if (message == '' || userDid == '' || userPk == '' || byField == '' || byValue == '') {
+        return encodeResponse({'success': false, 'error': 'Missing arguments'});
+      }
+
+      try {
+        var proof = await _zkGenerator.getProof(message, userDid, userPk, byField, byValue);
+        return encodeResponse({'success': true, 'proof': proof});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
     case 'claimCredential':
       final args = call.arguments;
@@ -86,8 +103,8 @@ Future<dynamic> _handleCall(MethodCall call) async {
       try {
         var credentials = await _zkGenerator.claimCredential(offerMessage, userDid, userPk);
         return encodeResponse({'success': true, 'credentials': credentials.map((e) => e.toJson()).toList()});
-      } catch (e) {
-        return encodeResponse({'success': false, 'error': e.toString()});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
 
     case 'backupIdentity':
@@ -101,8 +118,8 @@ Future<dynamic> _handleCall(MethodCall call) async {
       try {
         var backup = await _zkGenerator.backupIdentity(userDid, userPk);
         return encodeResponse({'success': true, 'backup': backup});
-      } catch (e) {
-        return encodeResponse({'success': false, 'error': e.toString()});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
 
     case 'restoreIdentity':
@@ -117,23 +134,25 @@ Future<dynamic> _handleCall(MethodCall call) async {
       try {
         await _zkGenerator.restoreIdentity(backup, userDid, userPk);
         return encodeResponse({'success': true});
-      } catch (e) {
-        return encodeResponse({'success': false, 'error': e.toString()});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
     
     case 'getCredentials':
       final args = call.arguments;
       final String userDid = args['userDid'] ?? '';
       final String userPk = args['userPk'] ?? '';
+      final String? byField = args['byField'] == '' ? null : args['byField'];
+      final String? byValue = args['byValue'] == '' ? null : args['byValue'];
       if (userDid == '' || userPk == '') {
         return encodeResponse({'success': false, 'error': 'Missing arguments'});
       }
 
       try {
-        var credentials = await _zkGenerator.getCredentials(userDid, userPk);
+        var credentials = await _zkGenerator.getCredentials(userDid, userPk, byField, byValue);
         return encodeResponse({'success': true, 'credentials': credentials.map((e) => e.toJson()).toList()});
-      } catch (e) {
-        return encodeResponse({'success': false, 'error': e.toString()});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
 
     default:
