@@ -79,14 +79,15 @@ Future<dynamic> _handleCall(MethodCall call) async {
       final String message = args['message'] ?? '';
       final String userDid = args['userDid'] ?? '';
       final String userPk = args['userPk'] ?? '';
+      final String challenge = args['challenge'] ?? '';
       final String byField = args['byField'] ?? '';
       final String byValue = args['byValue'] ?? '';
-      if (message == '' || userDid == '' || userPk == '' || byField == '' || byValue == '') {
+      if (message == '' || userDid == '' || userPk == '' || challenge == '' || byField == '' || byValue == '') {
         return encodeResponse({'success': false, 'error': 'Missing arguments'});
       }
 
       try {
-        var proof = await _zkGenerator.getProof(message, userDid, userPk, byField, byValue);
+        var proof = await _zkGenerator.getProof(message, userDid, userPk, challenge, byField, byValue);
         return encodeResponse({'success': true, 'proof': proof});
       } catch (e, stackTrace) {
         return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});

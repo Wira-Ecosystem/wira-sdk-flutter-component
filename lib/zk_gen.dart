@@ -9,7 +9,6 @@ import 'package:polygonid_flutter_sdk/common/domain/entities/filter_entity.dart'
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/credential/request/offer_iden3_message_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/request/contract_iden3_message_entity.dart';
-import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/response/iden3comm_proof_entity.dart';
 import 'package:polygonid_flutter_sdk/proof/domain/entities/download_info_entity.dart';
 import 'package:polygonid_flutter_sdk/sdk/polygon_id_sdk.dart';
 
@@ -124,7 +123,7 @@ class ZkGenerator {
     });
   }
 
-  Future<String> getProof(String message, String did, String pk, String byField, String byValue) async {
+  Future<String> getProof(String message, String did, String pk, String challenge, String byField, String byValue) async {
     return _lock.synchronized(() async {
       var credentials = await PolygonIdSdk.I.credential.getClaims(
         genesisDid: did,
@@ -148,6 +147,7 @@ class ZkGenerator {
         verifierDid: '',
         transactionData: iden3message.body.transactionData.toJson(),
         credential: credential,
+        challenge: challenge
       );
       return jsonEncode(proof.toJson());
     });
