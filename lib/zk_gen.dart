@@ -7,8 +7,10 @@ import 'package:polygonid_flutter_sdk/common/domain/entities/chain_config_entity
 import 'package:polygonid_flutter_sdk/common/domain/entities/env_entity.dart';
 import 'package:polygonid_flutter_sdk/common/domain/entities/filter_entity.dart';
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
+import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/authorization/request/auth_request_iden3_message_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/credential/request/offer_iden3_message_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/request/contract_iden3_message_entity.dart';
+import 'package:polygonid_flutter_sdk/identity/data/dtos/circuit_type.dart';
 import 'package:polygonid_flutter_sdk/proof/domain/entities/download_info_entity.dart';
 import 'package:polygonid_flutter_sdk/sdk/polygon_id_sdk.dart';
 
@@ -33,8 +35,7 @@ class _Lock {
 class ZkGenerator {
   static final EnvEntity defaultEnv = EnvEntity(
     pushUrl: 'https://push-staging.polygonid.com/api/v1',
-    ipfsUrl: 'https://ipfs.io',
-    ipfsGatewayUrl: 'https://ipfs.io/ipfs/',
+    ipfsGatewayUrl: 'https://ipfs.io',
     chainConfigs: {
       "80002": ChainConfigEntity(
         blockchain: 'polygon',
@@ -68,6 +69,7 @@ class ZkGenerator {
 
   Future<void> initialize(EnvEntity? env) async {
     await PolygonIdSdk.init(env: env ?? defaultEnv);
+    await PolygonIdSdk.I.switchLog(enabled: true);
   }
 
   Future<Stream<DownloadInfo>> downloadCircuits(
@@ -112,13 +114,14 @@ class ZkGenerator {
     });
   }
 
-  Future<void> authenticate(String msg, String did, String pk) async {
+  Future<void> authenticate(String msg, String did, String pk, List<String>? requestedCredentialIds) async {
     await _lock.synchronized(() async {
       var message = await PolygonIdSdk.I.iden3comm.getIden3Message(message: msg);
       await PolygonIdSdk.I.iden3comm.authenticate(
         privateKey: pk,
         genesisDid: did,
         message: message,
+        requestedCredentials: requestedCredentialIds,
       );
     });
   }
@@ -139,13 +142,13 @@ class ZkGenerator {
 
       var credential = credentials.first;
 
-      var iden3message = await PolygonIdSdk.I.iden3comm.getIden3Message(message: message) as ContractInvokeRequestMessage;
+      var iden3message = await PolygonIdSdk.I.iden3comm.getIden3Message(message: message) as AuthorizationRequestMessage;
       var proof = await PolygonIdSdk.I.iden3comm.getProof(
         request: iden3message.body.scope[0],
         genesisDid: did,
         privateKey: pk,
+        linkNonce: '0',
         verifierDid: '',
-        transactionData: iden3message.body.transactionData.toJson(),
         credential: credential,
         challenge: challenge
       );

@@ -64,12 +64,14 @@ Future<dynamic> _handleCall(MethodCall call) async {
       final String message = args['message'] ?? '';
       final String userDid = args['userDid'] ?? '';
       final String userPk = args['userPk'] ?? '';
+      final List<String>? requestedCredentialIds = args['requestedCredentialIds']?.cast<String>();
+
       if (message == '' || userDid == '' || userPk == '') {
         return encodeResponse({'success': false, 'error': 'Missing arguments'});
       }
 
       try {
-        await _zkGenerator.authenticate(message, userDid, userPk);
+        await _zkGenerator.authenticate(message, userDid, userPk, requestedCredentialIds);
         return encodeResponse({'success': true});
       } catch (e, stackTrace) {
         return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
@@ -160,7 +162,7 @@ Future<dynamic> _handleCall(MethodCall call) async {
       //Throw unimplemented error for unknown methods
       throw PlatformException(
         code: 'UNIMPLEMENTED',
-        message: 'Method ${call.method} not implemented in wira_logic',
+        message: 'Method "${call.method}" not implemented in wira_logic, check your method name and arguments.',
       );
   }
 }
