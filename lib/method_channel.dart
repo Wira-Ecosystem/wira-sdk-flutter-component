@@ -33,6 +33,22 @@ Future<dynamic> _handleCall(MethodCall call) async {
       } catch (e) {
         return encodeResponse({'success': false, 'error': e.toString(), 'arguments': jsonEncode(call.arguments)});
       }
+    case 'circuitsAreDownloaded':
+      final String stringCircuits = call.arguments['circuitsToDownload'] ?? '';
+
+      try {
+        CircuitsToDownloadParam? circuits;
+        if (stringCircuits != '') {
+          Map<String, dynamic> map = jsonDecode(stringCircuits);
+          map['circuitsWithChecksum'] = (map['circuitsWithChecksum'] as List).map((e) => CircuitModel.fromJson(e)).toList();
+          circuits = CircuitsToDownloadParam.fromJson(map);
+        }
+
+        final areDownloaded = await _zkGenerator.circuitsAreDownloaded(circuits);
+        return encodeResponse({'success': true, 'areDownloaded': areDownloaded});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
     case 'downloadCircuits':
       final String stringCircuits = call.arguments['circuitsToDownload'] ?? '';
 

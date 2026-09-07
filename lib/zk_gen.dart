@@ -9,8 +9,6 @@ import 'package:polygonid_flutter_sdk/common/domain/entities/filter_entity.dart'
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/authorization/request/auth_request_iden3_message_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/credential/request/offer_iden3_message_entity.dart';
-import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/proof/request/contract_iden3_message_entity.dart';
-import 'package:polygonid_flutter_sdk/identity/data/dtos/circuit_type.dart';
 import 'package:polygonid_flutter_sdk/proof/domain/entities/download_info_entity.dart';
 import 'package:polygonid_flutter_sdk/sdk/polygon_id_sdk.dart';
 
@@ -72,6 +70,14 @@ class ZkGenerator {
     await PolygonIdSdk.I.switchLog(enabled: true);
   }
 
+  Future<bool> circuitsAreDownloaded(
+    CircuitsToDownloadParam? circuitsToDownload
+  ) async {
+    var areDownloaded = await PolygonIdSdk.I.circuits.checkCircuits(circuitsToCheck: circuitsToDownload?.circuitsWithChecksum
+      ?? defaultCircuits.circuitsWithChecksum );
+    return areDownloaded;
+  }
+
   Future<Stream<DownloadInfo>> downloadCircuits(
     CircuitsToDownloadParam? circuitsToDownload
   ) async {
@@ -94,7 +100,10 @@ class ZkGenerator {
 
     subscription = stream.listen((info) {
         if (info is DownloadInfoOnProgress) {
-          onInfo('downloading', '${(info.downloaded / info.contentLength * 100).toStringAsFixed(2)} %');
+          final downloadedMb = info.downloaded / (1024 * 1024);
+          final totalMb = info.contentLength / (1024 * 1024);
+          final percent = (info.downloaded / info.contentLength * 100).toStringAsFixed(2);
+          onInfo('downloading', '$percent % (${downloadedMb.toStringAsFixed(2)} MB / ${totalMb.toStringAsFixed(2)} MB)');
         } else if (info is DownloadInfoOnDone) {
           onInfo('done', 'Download completed');
           subscription.cancel();
