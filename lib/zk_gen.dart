@@ -197,6 +197,33 @@ class ZkGenerator {
     });
   }
 
+  Future<void> deleteAllData(String did, String pk) async {
+    await _lock.synchronized(() async {
+      // Interactions live outside the identity store, so they must be dropped
+      // before the identity is removed and its keys become unusable.
+      var interactions = await PolygonIdSdk.I.iden3comm.getInteractions(
+        genesisDid: did,
+        privateKey: pk,
+      );
+      if (interactions.isNotEmpty) {
+        await PolygonIdSdk.I.iden3comm.removeInteractions(
+          genesisDid: did,
+          privateKey: pk,
+          ids: interactions.map((interaction) => interaction.id).toList(),
+        );
+      }
+
+      // Removes the identity along with its profiles, state and claims.
+      await PolygonIdSdk.I.identity.removeIdentity(
+        genesisDid: did,
+        privateKey: pk,
+      );
+
+      await PolygonIdSdk.I.credential.cleanCredentialsCache();
+      await PolygonIdSdk.I.iden3comm.cleanSchemaCache();
+    });
+  }
+
   Future<List<CredentialEntity>> getCredentials(String did, String pk, String? byField, String? byValue) async {
     return _lock.synchronized(() async {
       return await PolygonIdSdk.I.credential.getClaims(

@@ -174,6 +174,21 @@ Future<dynamic> _handleCall(MethodCall call) async {
         return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
 
+    case 'deleteAllData':
+      final args = call.arguments;
+      final String userDid = args['userDid'] ?? '';
+      final String userPk = args['userPk'] ?? '';
+      if (userDid == '' || userPk == '') {
+        return encodeResponse({'success': false, 'error': 'Missing arguments'});
+      }
+
+      try {
+        await _zkGenerator.deleteAllData(userDid, userPk);
+        return encodeResponse({'success': true});
+      } catch (e, stackTrace) {
+        return encodeResponse({'success': false, 'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
+
     default:
       //Throw unimplemented error for unknown methods
       throw PlatformException(
